@@ -7,7 +7,6 @@ Gaya guide ini: tiap bagian jelasin **konsep + kenapa perlu**, kamu yang nulis i
 ## 1. Kenapa ncurses?
 
 `printf` biasa gak bisa: update di posisi tertentu tanpa scroll, baca input tanpa Enter, atau nge-refresh layar secara terkontrol. Itu semua job-nya sebuah **terminal library**. Di C, standar untuk itu adalah **ncurses**.
-
 Fungsi inti yang wajib kamu ketahui (cari di `man`):
 - `initscr()` — masuk mode ncurses
 - `endwin()` — keluar mode ncurses (WAJIB dipanggil sebelum exit, atau terminal kamu rusak)
