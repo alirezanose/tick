@@ -2,48 +2,36 @@
 #include "timer.h"
 
 int main() {
-    struct timespec segment_start, current;
-    double accumulated = 0.0;
-    double elapsed;
+  /* struct timespec segment_start, current; */
+  Stopwatch stopwatch;
+  /* value for stopwach */
+  stopwatch.accumulated = 0.0;
+  stopwatch.paused = 1;
+
+  double elapsed;
+  
     
     /* my first curses  */
     initscr();
+    /* init stop watch */
+    stopwatch_init(&stopwatch);
+    /* flag for stop */
+    stopwatch.paused = 1;
 
     int ch = 0;
+    
     cbreak();
     noecho();
     curs_set(0);
     timeout(200);
 
-    int paused = 1;
-
-    if (clock_gettime(CLOCK_MONOTONIC, &segment_start) == -1) {
-	perror("cannot get time");
-	endwin();
-	return -1;
-    }
-
     while (ch != 'q') {
 
-	clock_gettime(CLOCK_MONOTONIC, &current);
-    
-	if (ch == 32) {
+	clock_gettime(CLOCK_MONOTONIC, &stopwatch.current);
 
-	    if (paused == 0) {
-		accumulated += differences(&segment_start, &current);
-	
-	    } else {
-		segment_start = current;
-	    }
-	
-	    paused = !paused;
-	}
+        stopwatch_toggle(&stopwatch, ch);
 
-        if (paused) {
-	    elapsed = accumulated;
-        } else {
-	    elapsed = accumulated + differences(&segment_start, &current);
-        }
+	stopwatch_elapsed(&stopwatch, &elapsed);
 	
 	clear();
 
@@ -52,7 +40,7 @@ int main() {
 	int seconds = total_seconds % 60;
 	
 	mvprintw(10,20,"%02d:%02d", minutes, seconds);
-    
+	
 	refresh();
 	ch = getch();    
     }
