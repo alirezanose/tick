@@ -7,7 +7,6 @@ int main() {
   Stopwatch stopwatch;
   /* value for stopwach */
   stopwatch.accumulated = 0.0;
-  stopwatch.paused = 1;
   /* flag for stop */
   stopwatch.paused = 1;
     
@@ -15,7 +14,9 @@ int main() {
   
     
     /* ini ui  */
-    ui_init();
+  if(ui_init() == -1){
+      return -1;
+  }
     /* init stop watch */
     if (stopwatch_init(&stopwatch) == -1){
 	return -1;

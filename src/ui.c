@@ -1,23 +1,24 @@
 #include "ui.h"
 
 /* function for int ui */
-void ui_init(void){
+int ui_init(void){
     
     if(initscr() == NULL){
 	fprintf(stderr, "error call initscr");
-	endwin();
+	return -1;
     }
     cbreak();
     noecho();
     curs_set(0);
     timeout(200);
     
+    return 0;
 }
 
 void ui_render(double elapsed){
 
     int total_seconds = (int)elapsed;
-    int minutes = total_seconds / 60;
+    int minutes = (total_seconds % 3600) / 60;
     int seconds = total_seconds % 60;
     int hours = total_seconds / 3600;
 
