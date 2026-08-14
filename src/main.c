@@ -17,7 +17,9 @@ int main() {
     /* ini ui  */
     ui_init();
     /* init stop watch */
-    stopwatch_init(&stopwatch);
+    if (stopwatch_init(&stopwatch) == -1){
+	return -1;
+    }
 
 
     int ch = 0;
