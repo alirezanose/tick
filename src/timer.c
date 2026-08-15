@@ -1,31 +1,41 @@
 #include "timer.h"
 
-void stopwatch_elapsed(Stopwatch *stopwatch, double *elapsed) {
+double timer_remaining(const Timer *timer){
+    double elapsed;
+    timer_elapsed(timer, &elapsed);
+    return timer->target_duration - elapsed;
+}
+
+bool timer_is_finished(const Timer *timer){
+    return timer_remaining(timer) <= 0;
+}
+
+void timer_elapsed(const Timer *timer, double *elapsed) {
     
-    if (stopwatch->paused) {
-      *elapsed = stopwatch->accumulated;
+    if (timer->paused) {
+      *elapsed = timer->accumulated;
     } else {
-      *elapsed = stopwatch->accumulated +
-	  differences(&stopwatch->segment_start, &stopwatch->current);
+      *elapsed = timer->accumulated +
+	  differences(&timer->segment_start, &timer->current);
     }
 }
 
 /* togglw for stopwatch */
 /* int ch for number of toogle */
-void stopwatch_toggle(Stopwatch *stopwatch, const int ch) {
+void timer_toggle(Timer *timer, const int ch) {
     
     if (ch == 32) {
-	if (stopwatch->paused == 0) {
-	   stopwatch->accumulated += differences(&stopwatch->segment_start, &stopwatch->current);
+	if (timer->paused == 0) {
+	   timer->accumulated += differences(&timer->segment_start, &timer->current);
 	} else {
-	    stopwatch->segment_start = stopwatch->current;
+	    timer->segment_start = timer->current;
 	}	
-	stopwatch->paused = !stopwatch->paused;
+	timer->paused = !timer->paused;
     }
 }
 
-int stopwatch_init(Stopwatch *stopwatch) {
-  if (clock_gettime(CLOCK_MONOTONIC, &stopwatch->segment_start) == -1) {
+int timer_init(Timer *timer) {
+  if (clock_gettime(CLOCK_MONOTONIC, &timer->segment_start) == -1) {
     perror("cannot get time");
     endwin();
     return -1;

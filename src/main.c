@@ -4,11 +4,16 @@
 
 int main() {
   /* struct timespec segment_start, current; */
-  Stopwatch stopwatch;
+    Timer timer;
   /* value for stopwach */
-  stopwatch.accumulated = 0.0;
+  timer.accumulated = 0.0;
   /* flag for stop */
-  stopwatch.paused = 1;
+  timer.paused = 1;
+
+  /* default mode just temporary */
+  timer.mode = 1;
+
+  timer.target_duration = 10.0;
     
   double elapsed;
   
@@ -18,22 +23,22 @@ int main() {
       return -1;
   }
     /* init stop watch */
-    if (stopwatch_init(&stopwatch) == -1){
-	return -1;
-    }
+  if (timer_init(&timer) == -1){
+      return -1;
+  }
 
 
     int ch = 0;
 
     while (ch != 'q') {
 
-	clock_gettime(CLOCK_MONOTONIC, &stopwatch.current);
+	clock_gettime(CLOCK_MONOTONIC, &timer.current);
 
-        stopwatch_toggle(&stopwatch, ch);
+        timer_toggle(&timer, ch);
 
-	stopwatch_elapsed(&stopwatch, &elapsed);
+	timer_elapsed(&timer, &elapsed);
 	/* render the ui for stopwatch */
-	ui_render(elapsed);
+	ui_render(elapsed, &timer);
 	
 	ch = getch();    
     }
