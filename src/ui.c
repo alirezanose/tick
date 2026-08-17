@@ -76,10 +76,17 @@ void ui_render(double elapsed, Timer *timer, const char *buffer){
     
     clear();
 
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    int center_y = height / 2;
+    int center_x = width / 2;
+
     if(timer->state == INPUT){
 	mvprintw(8, 20, "set duration");
 	mvprintw(10,20, "%s_", buffer);
 	mvprintw(12,20, "ENTER: confirm BACKSPACE: for delete");
+	refresh();
+	return;
     }
     
     int result_elapsed = (int)elapsed;
@@ -107,7 +114,7 @@ void ui_render(double elapsed, Timer *timer, const char *buffer){
     int seconds = total_seconds % 60;
     int hours = total_seconds / 3600;
 
-    mvprintw(10,20,"%02d:%02d:%02d",hours, minutes, seconds);
+    mvprintw(center_y, center_x - 4,"%02d:%02d:%02d",hours, minutes, seconds);
     
     refresh();
 
