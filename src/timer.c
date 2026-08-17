@@ -1,5 +1,13 @@
 #include "timer.h"
 
+void timer_reset(Timer *timer, double new_duration){
+    timer->target_duration = new_duration;
+    timer->accumulated = 0.0;
+    timer->paused = false;
+
+    clock_gettime(CLOCK_MONOTONIC, &timer->segment_start);
+}
+
 double timer_remaining(const Timer *timer){
     double elapsed;
     timer_elapsed(timer, &elapsed);

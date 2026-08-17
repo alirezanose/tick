@@ -3,6 +3,11 @@
 
 #include "common.h"
 
+typedef enum {
+    NORMAL,
+    INPUT
+}InputState;
+
 /* struct mode */
 typedef enum {
     MODE_STOPWATCH,
@@ -15,6 +20,7 @@ typedef struct {
     struct timespec segment_start;
     struct timespec current;
     TimerMode mode;
+    InputState state;
     bool paused;
     double accumulated;
     double target_duration;
@@ -30,5 +36,7 @@ bool timer_is_finished(const Timer *timer);
 
 /* calculate function for stop wacth */
 double differences(const struct timespec *segment_start,const struct timespec *current);
+
+void timer_reset(Timer *timer, double new_duration);
 
 #endif
