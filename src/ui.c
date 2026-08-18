@@ -1,90 +1,83 @@
 #include "ui.h"
 
-void input_buffer(char *buffer, int ch, size_t buffer_size, size_t *length)
-{
-    if (ch >= '0' && ch <= '9' && *length < buffer_size - 1) {
-        buffer[*length] = ch;
-        (*length)++;
-        buffer[*length] = '\0';
-    }
-
-    if (ch == '\b' || ch == 127) {
-        if (*length > 0) {
-            (*length)--;
-            buffer[*length] = '\0';
-        }
-    }
-}
-
-/* function input handler */
-int input_handling(int ch, Timer *timer, size_t buffer_size, char *buffer, size_t *length)
-{
-    if (ch == 'q') {
-        return -1;
-    }
-
-    if (ch == 'i') {
-        timer->state = INPUT;
-        keypad(stdscr, TRUE);
-        echo();
-        memset(buffer, 0, buffer_size);
-        *length = 0;
-        return 1;
-    }
-
-    if (timer->state == INPUT || timer->state == INPUT_ERROR) {
-
-        /* tekan key apapun saat INPUT_ERROR → reset ke INPUT, proses key */
-        if (timer->state == INPUT_ERROR) {
-            timer->state = INPUT;
-            memset(buffer, 0, buffer_size);
-            *length = 0;
-            /* teruskan key yang ditekan ke handler input normal */
-        }
-
-        if (ch == '\n') {
-            errno = 0;
-            char *endptr;
-            long val = strtol(buffer, &endptr, 10);
-
-            if (endptr == buffer || val <= 0) {
-                /* validasi gagal: masuk INPUT_ERROR, JANGAN balik ke NORMAL */
-                timer->state = INPUT_ERROR;
-                /* buffer dikosongkan supaya siap ngetik ulang */
-                memset(buffer, 0, buffer_size);
-                *length = 0;
-            } else {
-                /* validasi berhasil: balik NORMAL, terapkan durasi */
-                timer->state = NORMAL;
-                noecho();
-                keypad(stdscr, FALSE);
-                timer_reset(timer, val);
-            }
-        } else if ((ch >= '0' && ch <= '9') || ch == '\b' || ch == 127) {
-            input_buffer(buffer, ch, buffer_size, length);
-        }
-    }
-    return 1;
-}
-
-/* function for init ui */
 int ui_init(void)
 {
     setlocale(LC_ALL, "");
 
     if (initscr() == NULL) {
-        fprintf(stderr, "error call initscr");
+        fprintf(stderr, "Error initializing ncurses screen\n");
         return -1;
     }
+
     cbreak();
     noecho();
     curs_set(0);
-    timeout(200);
+    keypad(stdscr, TRUE);
+    timeout(100);
 
     return 0;
 }
 
-void ui_render(double elapsed, Timer *timer, const char *buffer)
+int input_handling(int ch, Timer *timer)
+{
+    if (timer->state == NORMAL) {
+        if (ch == 'q') {
+            return -1;
+        }
+
+        if (ch == 'i') {
+            timer_seconds_to_digits((int)timer->target_duration, timer->edit_digits);
+            timer->cursor_pos = 0;
+            timer->state = INPUT;
+            return 1;
+        }
+
+        if (timer->paused) {
+            if (ch == KEY_UP) {
+                timer_reset(timer, timer->target_duration + 5);
+            } else if (ch == KEY_DOWN) {
+                if (timer->target_duration > 5) {
+                    timer_reset(timer, timer->target_duration - 5);
+                }
+            }
+        }
+    } else if (timer->state == INPUT) {
+        if (ch >= '0' && ch <= '9') {
+            timer->edit_digits[timer->cursor_pos] = ch - '0';
+            if (timer->cursor_pos < 5) {
+                timer->cursor_pos++;
+            }
+        } else if (ch == KEY_LEFT) {
+            if (timer->cursor_pos > 0) {
+                timer->cursor_pos--;
+            }
+        } else if (ch == KEY_RIGHT) {
+            if (timer->cursor_pos < 5) {
+                timer->cursor_pos++;
+            }
+        } else if (ch == KEY_BACKSPACE || ch == '\b' || ch == 127) {
+            if (timer->cursor_pos > 0) {
+                timer->cursor_pos--;
+            }
+        } else if (ch == KEY_UP) {
+            timer_adjust_edit_duration(timer, 5);
+        } else if (ch == KEY_DOWN) {
+            timer_adjust_edit_duration(timer, -5);
+        } else if (ch == '\n' || ch == KEY_ENTER) {
+            int total_sec = timer_digits_to_seconds(timer->edit_digits);
+            if (total_sec > 0) {
+                timer_reset(timer, total_sec);
+            }
+            timer->state = NORMAL;
+        } else if (ch == 27 || ch == 'q') { /* ESC or q cancels edit */
+            timer->state = NORMAL;
+        }
+    }
+
+    return 1;
+}
+
+void ui_render(double elapsed, const Timer *timer)
 {
     clear();
 
@@ -93,51 +86,58 @@ void ui_render(double elapsed, Timer *timer, const char *buffer)
     int center_y = height / 2;
     int center_x = width / 2;
 
-    if (timer->state == INPUT || timer->state == INPUT_ERROR) {
-        mvprintw(center_y - 3, center_x - 8, "set duration (seconds):");
+    int start_y = center_y - 3;
+    int start_x = center_x - 18;
 
-        if (timer->state == INPUT_ERROR) {
-            mvprintw(center_y - 1, center_x - 14, "! invalid: masukkan angka lebih dari 0");
-            mvprintw(center_y + 1, center_x - 6, "[ tekan key untuk coba lagi ]");
-        } else {
-            mvprintw(center_y,     center_x - 6, "%s_", buffer);
-            mvprintw(center_y + 2, center_x - 17, "ENTER: konfirmasi   BACKSPACE: hapus");
+    static const int digit_offsets[6] = {0, 6, 13, 19, 26, 32};
+
+    if (timer->state == INPUT) {
+        int hours   = timer->edit_digits[0] * 10 + timer->edit_digits[1];
+        int minutes = timer->edit_digits[2] * 10 + timer->edit_digits[3];
+        int seconds = timer->edit_digits[4] * 10 + timer->edit_digits[5];
+
+        mvprintw(start_y - 2, center_x - 6, "[ EDIT TIME ]");
+
+        ascii_time(hours, minutes, seconds, start_y, start_x);
+
+        /* Render cursor underline directly beneath active digit */
+        mvprintw(start_y + 5, start_x + digit_offsets[timer->cursor_pos], "^^^^^");
+
+        mvprintw(start_y + 7, center_x - 27,
+                 "[0-9] Type   [<-/->] Move   [^/v] +/-5s   [ENTER] Save   [ESC] Cancel");
+    } else {
+        int total_seconds = 0;
+
+        if (timer->mode == MODE_STOPWATCH) {
+            total_seconds = (int)elapsed;
+            if (timer->paused) {
+                mvprintw(start_y - 2, center_x - 5, "[ PAUSED ]");
+            } else {
+                mvprintw(start_y - 2, center_x - 5, "[ RUNNING ]");
+            }
+        } else if (timer->mode == MODE_COUNTDOWN) {
+            if (timer_is_finished(timer)) {
+                total_seconds = 0;
+                mvprintw(start_y - 2, center_x - 8, ">> TIME'S UP! <<");
+            } else {
+                total_seconds = (int)timer_remaining(timer);
+                if (timer->paused) {
+                    mvprintw(start_y - 2, center_x - 5, "[ PAUSED ]");
+                } else {
+                    mvprintw(start_y - 2, center_x - 5, "[ RUNNING ]");
+                }
+            }
         }
 
-        refresh();
-        return;
+        int hours   = total_seconds / 3600;
+        int minutes = (total_seconds % 3600) / 60;
+        int seconds = total_seconds % 60;
+
+        ascii_time(hours, minutes, seconds, start_y, start_x);
+
+        mvprintw(start_y + 6, center_x - 23,
+                 "[SPACE] Start/Pause   [i] Edit   [^/v] +/-5s   [q] Quit");
     }
-
-    int result_elapsed  = (int)elapsed;
-    int result_remained = (int)timer_remaining(timer);
-    int result = 0;  /* nilai default aman */
-
-    if (timer->mode == MODE_STOPWATCH) {
-        result = result_elapsed;
-    } else if (timer->mode == MODE_COUNTDOWN) {
-        if (timer_is_finished(timer)) {
-            mvprintw(center_y + 5, center_x - 7, "time's up!");
-            result = 0;
-        } else {
-            result = result_remained;
-        }
-    }
-
-    int total_seconds = result;
-    int hours   = total_seconds / 3600;
-    int minutes = (total_seconds % 3600) / 60;
-    int seconds = total_seconds % 60;
-
-    /* mvprintw(center_y, center_x - 4, "%02d:%02d:%02d", hours, minutes, seconds); */
-    ascii_time(
-        hours,
-        minutes,
-        seconds,
-        center_y - 2,
-        center_x - 20
-    );
-
-    mvprintw(center_y + 5, center_x - 16, "SPACE: pause/resume   i: set time   q: quit");
 
     refresh();
 }

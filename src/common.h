@@ -8,5 +8,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <locale.h>
 
 #endif
