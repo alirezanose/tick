@@ -11,8 +11,9 @@ int main(void)
     timer.paused          = true;
     timer.mode            = MODE_COUNTDOWN;
     timer.state           = NORMAL;
-    timer.target_duration = 10.0;
+    timer.target_duration = 900.0;
     timer.cursor_pos      = 0;
+    timer.show_invalid_input = 0;
 
     if (ui_init() == -1) {
         return -1;

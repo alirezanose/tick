@@ -42,6 +42,11 @@ int input_handling(int ch, Timer *timer)
             }
         }
     } else if (timer->state == INPUT) {
+	/* assign false for invalid input */
+	if(ch != -1 && ch != '\n' && ch != KEY_ENTER){
+	    timer->show_invalid_input = false;   
+	}
+	
         if (ch >= '0' && ch <= '9') {
             timer->edit_digits[timer->cursor_pos] = ch - '0';
             if (timer->cursor_pos < 5) {
@@ -67,10 +72,13 @@ int input_handling(int ch, Timer *timer)
             int total_sec = timer_digits_to_seconds(timer->edit_digits);
             if (total_sec > 0) {
                 timer_reset(timer, total_sec);
-            }
-            timer->state = NORMAL;
+		timer->state = NORMAL;
+            }else {
+		timer->show_invalid_input = true;
+	    }
+
         } else if (ch == 27 || ch == 'q') { /* ESC or q cancels edit */
-            timer->state = NORMAL;
+	    timer->state = NORMAL;
         }
     }
 
@@ -103,8 +111,13 @@ void ui_render(double elapsed, const Timer *timer)
         /* Render cursor underline directly beneath active digit */
         mvprintw(start_y + 5, start_x + digit_offsets[timer->cursor_pos], "^^^^^");
 
-        mvprintw(start_y + 7, center_x - 27,
-                 "[0-9] Type   [<-/->] Move   [^/v] +/-5s   [ENTER] Save   [ESC] Cancel");
+
+	if(timer->show_invalid_input == true){
+	    mvprintw(start_y + 7, center_x - 15, "invalid : duration must be > 0");
+	}else{
+	    mvprintw(start_y + 7, center_x - 27,
+		     "[0-9] Type   [<-/->] Move   [^/v] +/-5s   [ENTER] Save   [ESC] Cancel");
+	}
     } else {
         int total_seconds = 0;
 
@@ -136,11 +149,12 @@ void ui_render(double elapsed, const Timer *timer)
         ascii_time(hours, minutes, seconds, start_y, start_x);
 
         mvprintw(start_y + 6, center_x - 23,
-                 "[SPACE] Start/Pause   [i] Edit   [^/v] +/-5s   [q] Quit");
+                 "[SPACE] Start/Pause   [i] Edit   [q] Quit");
     }
 
     refresh();
 }
+
 
 void ui_shutdown(void)
 {

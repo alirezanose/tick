@@ -23,6 +23,7 @@ typedef struct {
     double target_duration;
     int edit_digits[6];  /* [H1, H2, M1, M2, S1, S2] */
     int cursor_pos;      /* Active digit index: 0..5 */
+    bool show_invalid_input;
 } Timer;
 
 /* Timer lifecycle & calculations */
