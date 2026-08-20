@@ -9,5 +9,6 @@ int ui_init(void);
 void ui_render(double elapsed, const Timer *timer);
 void ui_shutdown(void);
 int input_handling(int ch, Timer *timer);
+void ui_render_tabs(int y, TimerMode current_mode);
 
 #endif

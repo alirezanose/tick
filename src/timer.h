@@ -9,8 +9,9 @@ typedef enum {
 } InputState;
 
 typedef enum {
+    MODE_COUNTDOWN,
     MODE_STOPWATCH,
-    MODE_COUNTDOWN
+    MODE_POMODORO
 } TimerMode;
 
 typedef struct {

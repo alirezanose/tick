@@ -27,6 +27,30 @@ int input_handling(int ch, Timer *timer)
             return -1;
         }
 
+	if(ch == 'r'){
+	    timer_reset(timer, timer->target_duration);
+	    return 1;
+	}
+	/* switch mode handling. TAB key*/
+	if(ch == '\t'){
+	    timer->mode = (timer->mode + 1) % 3;
+	    timer_reset(timer, timer->target_duration);
+	    return 1;
+	}else if(ch == '1'){
+	    timer->mode = MODE_COUNTDOWN;
+	    timer_reset(timer, timer->target_duration);
+	    return 1;
+	}else if(ch == '2'){
+	    timer->mode = MODE_STOPWATCH;
+	    timer_reset(timer, timer->target_duration);
+	    return 1;
+	}else if(ch == '3'){
+	    timer->mode = MODE_POMODORO;
+	    timer_reset(timer, timer->target_duration);
+	    return 1;
+	}
+	    /* end switch mode handling */
+	    
         if (ch == 'i') {
             timer_seconds_to_digits((int)timer->target_duration, timer->edit_digits);
             timer->cursor_pos = 0;
@@ -99,6 +123,20 @@ static void ui_print_centered(int y, const char *text){
     mvprintw(y,x,"%s", text);
 }
 
+void ui_render_tabs(int y, TimerMode current_mode){
+    char tab_bar[128];
+    snprintf(tab_bar, sizeof(tab_bar),
+	    "%s %s %s",
+	    current_mode == MODE_COUNTDOWN ? "[ 1. Countdown ]" : " 1. Countdown ",
+	    current_mode == MODE_STOPWATCH ? "[ 2. Stopwatch ]" : " 2. Stopwatch ",
+	    current_mode == MODE_POMODORO ? "[ 3. Pomodoro ]" : " 3. Pomodoro "
+	);
+
+    ui_print_centered(y, tab_bar);
+}
+
+
+
 void ui_render(double elapsed, const Timer *timer)
 {
     clear();
@@ -106,6 +144,7 @@ void ui_render(double elapsed, const Timer *timer)
     int height, width;
     getmaxyx(stdscr, height, width);
 
+    /* check size of terminal */
     if(width < MAX_TERM_WIDTH || height < MAX_TERM_HEIGHT){
 	ui_print_centered(height / 2 - 1, "terminal to small");
 	ui_print_centered(height / 2 + 1, "please resize");
@@ -119,6 +158,9 @@ void ui_render(double elapsed, const Timer *timer)
 
     int start_y = center_y - 2;
     int start_x = center_x - (ASCII_TIME_WIDTH / 2);
+
+    /* render tabs */
+    ui_render_tabs(start_y - 4, timer->mode);
     
     if (timer->state == INPUT) {
         int hours   = timer->edit_digits[0] * 10 + timer->edit_digits[1];
@@ -132,7 +174,7 @@ void ui_render(double elapsed, const Timer *timer)
         /* Render cursor underline directly beneath active digit */
         mvprintw(start_y + 5, start_x + ascii_get_digit_x_offset(timer->cursor_pos), "^^^^^");
 
-
+	
 	if(timer->show_invalid_input == true){
 	    ui_print_centered(start_y + 7, "invalid: duration must be > 0");
 	}else{
@@ -148,7 +190,7 @@ void ui_render(double elapsed, const Timer *timer)
             } else {
 		ui_print_centered(start_y - 2, "[ RUNNING ]");
             }
-        } else if (timer->mode == MODE_COUNTDOWN) {
+        } else if (timer->mode == MODE_COUNTDOWN || timer->mode == MODE_POMODORO) {
             if (timer_is_finished(timer)) {
                 total_seconds = 0;
 		ui_print_centered(start_y - 2, ">> TIME'S UP! <<");
@@ -167,8 +209,8 @@ void ui_render(double elapsed, const Timer *timer)
         int seconds = total_seconds % 60;
 
         ascii_time(hours, minutes, seconds, start_y, start_x);
-
-	ui_print_centered(start_y + 7, "[SPACE] Start/Pause   [i] Edit   [q] Quit");
+	/* footer */
+	ui_print_centered(start_y + 7, "[SPACE] Start/Pause [TAB] Mode [r] Reset  [i] Edit   [q] Quit");
     }
 
     refresh();
