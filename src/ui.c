@@ -1,4 +1,6 @@
 #include "ui.h"
+#define MAX_TERM_WIDTH 45
+#define MAX_TERM_HEIGHT 14
 
 int ui_init(void)
 {
@@ -85,38 +87,56 @@ int input_handling(int ch, Timer *timer)
     return 1;
 }
 
+static void ui_print_centered(int y, const char *text){
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    (void)height;
+
+    int len = (int)strlen(text);
+    int x = (width - len) / 2;
+    if(x < 0) x = 0;
+
+    mvprintw(y,x,"%s", text);
+}
+
 void ui_render(double elapsed, const Timer *timer)
 {
     clear();
 
     int height, width;
     getmaxyx(stdscr, height, width);
+
+    if(width < MAX_TERM_WIDTH || height < MAX_TERM_HEIGHT){
+	ui_print_centered(height / 2 - 1, "terminal to small");
+	ui_print_centered(height / 2 + 1, "please resize");
+	ui_print_centered(height / 2 + 3, "(min: 45x14)");
+	refresh();
+	return;
+    }
+    
     int center_y = height / 2;
     int center_x = width / 2;
 
-    int start_y = center_y - 3;
-    int start_x = center_x - 18;
-
-    static const int digit_offsets[6] = {0, 6, 13, 19, 26, 32};
-
+    int start_y = center_y - 2;
+    int start_x = center_x - (ASCII_TIME_WIDTH / 2);
+    
     if (timer->state == INPUT) {
         int hours   = timer->edit_digits[0] * 10 + timer->edit_digits[1];
         int minutes = timer->edit_digits[2] * 10 + timer->edit_digits[3];
         int seconds = timer->edit_digits[4] * 10 + timer->edit_digits[5];
 
-        mvprintw(start_y - 2, center_x - 6, "[ EDIT TIME ]");
+	ui_print_centered(start_y - 2, "[ EDIT TIME ]");
 
         ascii_time(hours, minutes, seconds, start_y, start_x);
 
         /* Render cursor underline directly beneath active digit */
-        mvprintw(start_y + 5, start_x + digit_offsets[timer->cursor_pos], "^^^^^");
+        mvprintw(start_y + 5, start_x + ascii_get_digit_x_offset(timer->cursor_pos), "^^^^^");
 
 
 	if(timer->show_invalid_input == true){
-	    mvprintw(start_y + 7, center_x - 15, "invalid : duration must be > 0");
+	    ui_print_centered(start_y + 7, "invalid: duration must be > 0");
 	}else{
-	    mvprintw(start_y + 7, center_x - 27,
-		     "[0-9] Type   [<-/->] Move   [^/v] +/-5s   [ENTER] Save   [ESC] Cancel");
+	    ui_print_centered(start_y + 7, "[0-9] Type   [<-/->] Move   [^/v] +/-5s   [ENTER] Save   [ESC] Cancel");
 	}
     } else {
         int total_seconds = 0;
@@ -124,20 +144,20 @@ void ui_render(double elapsed, const Timer *timer)
         if (timer->mode == MODE_STOPWATCH) {
             total_seconds = (int)elapsed;
             if (timer->paused) {
-                mvprintw(start_y - 2, center_x - 5, "[ PAUSED ]");
+		ui_print_centered(start_y - 2, "[ PAUSED ]");
             } else {
-                mvprintw(start_y - 2, center_x - 5, "[ RUNNING ]");
+		ui_print_centered(start_y - 2, "[ RUNNING ]");
             }
         } else if (timer->mode == MODE_COUNTDOWN) {
             if (timer_is_finished(timer)) {
                 total_seconds = 0;
-                mvprintw(start_y - 2, center_x - 8, ">> TIME'S UP! <<");
+		ui_print_centered(start_y - 2, ">> TIME'S UP! <<");
             } else {
                 total_seconds = (int)timer_remaining(timer);
                 if (timer->paused) {
-                    mvprintw(start_y - 2, center_x - 5, "[ PAUSED ]");
+		    ui_print_centered(start_y - 2, "[ PAUSED ]");
                 } else {
-                    mvprintw(start_y - 2, center_x - 5, "[ RUNNING ]");
+		    ui_print_centered(start_y - 2, "[ RUNNING ]");
                 }
             }
         }
@@ -148,8 +168,7 @@ void ui_render(double elapsed, const Timer *timer)
 
         ascii_time(hours, minutes, seconds, start_y, start_x);
 
-        mvprintw(start_y + 6, center_x - 23,
-                 "[SPACE] Start/Pause   [i] Edit   [q] Quit");
+	ui_print_centered(start_y + 7, "[SPACE] Start/Pause   [i] Edit   [q] Quit");
     }
 
     refresh();

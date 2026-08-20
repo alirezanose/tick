@@ -1,19 +1,32 @@
 #include "ascii.h"
 
+int ascii_get_digit_x_offset(int digit_index)
+{
+    static const int offset[6] = {
+        0, 6, 15, 21, 30, 36
+    };
+
+    if (digit_index < 0 || digit_index > 5) {
+        return 0;
+    }
+
+    return offset[digit_index];
+}
+
 void ascii_time(int hours, int minutes, int seconds, int y, int x)
 {
     ascii_digit(hours / 10,   y, x);
     ascii_digit(hours % 10,   y, x + 6);
 
-    ascii_colon(y, x + 11);
+    ascii_colon(y, x + 12);
 
-    ascii_digit(minutes / 10, y, x + 13);
-    ascii_digit(minutes % 10, y, x + 19);
+    ascii_digit(minutes / 10, y, x + 15);
+    ascii_digit(minutes % 10, y, x + 21);
 
-    ascii_colon(y, x + 24);
+    ascii_colon(y, x + 27);
 
-    ascii_digit(seconds / 10, y, x + 26);
-    ascii_digit(seconds % 10, y, x + 32);
+    ascii_digit(seconds / 10, y, x + 30);
+    ascii_digit(seconds % 10, y, x + 36);
 }
 
 void ascii_colon(int y, int x)
