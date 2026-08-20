@@ -2,46 +2,41 @@
 #include "timer.h"
 #include "ui.h"
 
-int main() {
-  /* struct timespec segment_start, current; */
+int main(void)
+{
+    double elapsed;
     Timer timer;
-  /* value for stopwach */
-  timer.accumulated = 0.0;
-  /* flag for stop */
-  timer.paused = 1;
 
-  /* default mode just temporary */
-  timer.mode = 1;
+    timer.accumulated     = 0.0;
+    timer.paused          = true;
+    timer.mode            = MODE_COUNTDOWN;
+    timer.state           = NORMAL;
+    timer.target_duration = 900.0;
+    timer.cursor_pos      = 0;
+    timer.show_invalid_input = 0;
 
-  timer.target_duration = 10.0;
-    
-  double elapsed;
-  
-    
-    /* ini ui  */
-  if(ui_init() == -1){
-      return -1;
-  }
-    /* init stop watch */
-  if (timer_init(&timer) == -1){
-      return -1;
-  }
+    if (ui_init() == -1) {
+        return -1;
+    }
 
+    if (timer_init(&timer) == -1) {
+        return -1;
+    }
 
     int ch = 0;
 
-    while (ch != 'q') {
-
-	clock_gettime(CLOCK_MONOTONIC, &timer.current);
+    while (input_handling(ch, &timer) != -1) {
+        clock_gettime(CLOCK_MONOTONIC, &timer.current);
 
         timer_toggle(&timer, ch);
 
-	timer_elapsed(&timer, &elapsed);
-	/* render the ui for stopwatch */
-	ui_render(elapsed, &timer);
-	
-	ch = getch();    
+        timer_elapsed(&timer, &elapsed);
+
+        ui_render(elapsed, &timer);
+
+        ch = getch();
     }
 
     ui_shutdown();
+    return 0;
 }

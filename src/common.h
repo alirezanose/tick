@@ -5,5 +5,9 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <locale.h>
 
 #endif
