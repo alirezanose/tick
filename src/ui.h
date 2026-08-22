@@ -4,6 +4,7 @@
 #include "common.h"
 #include "timer.h"
 #include "ascii.h"
+#include "audio.h"
 
 int ui_init(void);
 void ui_render(double elapsed, const Timer *timer);

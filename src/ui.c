@@ -31,6 +31,10 @@ int input_handling(int ch, Timer *timer)
 	    timer_reset(timer, timer->target_duration);
 	    return 1;
 	}
+
+	if(ch == 's' || ch == 'S'){
+	    audio_toggle_mute();
+	}
 	/* switch mode handling. TAB key*/
 	if(ch == '\t'){
 	    timer->mode = (timer->mode + 1) % 3;
@@ -49,7 +53,7 @@ int input_handling(int ch, Timer *timer)
 	    timer_reset(timer, timer->target_duration);
 	    return 1;
 	}
-	    /* end switch mode handling */
+	    /* end switch mode handling TAB key*/
 	    
         if (ch == 'i') {
             timer_seconds_to_digits((int)timer->target_duration, timer->edit_digits);
@@ -139,8 +143,9 @@ void ui_render_tabs(int y, TimerMode current_mode){
 
 void ui_render(double elapsed, const Timer *timer)
 {
-    clear();
-
+    /* clear(); */
+    erase();
+    
     int height, width;
     getmaxyx(stdscr, height, width);
 
@@ -210,7 +215,10 @@ void ui_render(double elapsed, const Timer *timer)
 
         ascii_time(hours, minutes, seconds, start_y, start_x);
 	/* footer */
-	ui_print_centered(start_y + 7, "[SPACE] Start/Pause [TAB] Mode [r] Reset  [i] Edit   [q] Quit");
+	char footer[160];
+	snprintf(footer, sizeof(footer),
+		 "[SPACE] Start/Pause [s] Sound: %s [TAB] Mode [r] Reset  [i] Edit   [q] Quit", audio_is_muted() ? "OFF" : "ON");
+	ui_print_centered(start_y + 7, footer);
     }
 
     refresh();

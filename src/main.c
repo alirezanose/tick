@@ -1,6 +1,7 @@
 #include "common.h"
 #include "timer.h"
 #include "ui.h"
+#include "audio.h"
 
 int main(void)
 {
@@ -15,6 +16,10 @@ int main(void)
     timer.cursor_pos      = 0;
     timer.show_invalid_input = 0;
 
+    /* init for sound */
+    audio_init();
+
+    /* init for render ui */
     if (ui_init() == -1) {
         return -1;
     }
@@ -25,6 +30,8 @@ int main(void)
 
     int ch = 0;
 
+    int last_sec = -1;
+
     while (input_handling(ch, &timer) != -1) {
         clock_gettime(CLOCK_MONOTONIC, &timer.current);
 
@@ -32,11 +39,25 @@ int main(void)
 
         timer_elapsed(&timer, &elapsed);
 
+	int current_sec = (int)elapsed;
+
+	if(!timer.paused && current_sec != last_sec){
+	    audio_play_tick();
+	    /* update last second */
+	    last_sec = current_sec;
+	}
+
+	if(timer.mode == MODE_COUNTDOWN && !timer.paused && timer_remaining(&timer) <= 0.0){
+	    audio_play_alarm();
+	    timer.paused = true;
+	}
+
         ui_render(elapsed, &timer);
 
         ch = getch();
     }
-
+    
+    audio_free();
     ui_shutdown();
     return 0;
 }
