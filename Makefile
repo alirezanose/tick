@@ -11,7 +11,8 @@ SRC	:= \
 	src/pomodoro.c \
 	src/timer.c \
 	src/ui.c \
-	src/ascii.c
+	src/ascii.c \
+	src/audio.c 
 
 OBJ	:= $(SRC:.c=.o)
 
