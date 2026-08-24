@@ -29,10 +29,7 @@ static bool resolve_sound_path(const char *filename, char *resolved_path, size_t
 }
 
 static void play_wav_file(const char *filename){
-    if(sound_muted){
-	return;
-    }
-
+    
     /* check file exist */
     char full_path[512];
     if(!resolve_sound_path(filename, full_path, sizeof(full_path))){
@@ -66,6 +63,9 @@ void audio_init(void){
 }
 
 void audio_play_tick(void){
+    if(sound_muted){
+	return;
+    }
     int random_idx = rand() % 3;
     play_wav_file(tick_filenames[random_idx]);
 }
