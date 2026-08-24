@@ -47,6 +47,14 @@ int main(void)
 	    last_sec = -1;
 	}
 
+	if(!timer.paused && timer.mode == MODE_POMODORO && timer_remaining(&timer) <= 0.0){
+	    audio_play_alarm();
+	    timer.paused = true;
+	    pomodoro_next_phase(&timer.pomo);
+	    timer_reset(&timer, pomodoro_get_current_duration(&timer.pomo));
+	    last_sec = -1;
+	}
+
 
 	if(!timer.paused && current_sec != last_sec){
 	    audio_play_tick();

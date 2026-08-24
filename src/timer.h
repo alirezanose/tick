@@ -2,6 +2,7 @@
 #define TIMER_H_
 
 #include "common.h"
+#include "pomodoro.h"
 
 typedef enum {
     NORMAL,
@@ -15,6 +16,7 @@ typedef enum {
 } TimerMode;
 
 typedef struct {
+    Pomodoro pomo;
     struct timespec segment_start;
     struct timespec current;
     TimerMode mode;

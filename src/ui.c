@@ -28,7 +28,12 @@ int input_handling(int ch, Timer *timer)
         }
 
 	if(ch == 'r'){
-	    timer_reset(timer, timer->target_duration);
+	    if(timer->mode == MODE_POMODORO){
+		pomodoro_reset(&timer->pomo);
+		timer_reset(timer, pomodoro_get_current_duration(&timer->pomo));
+	    }else{
+		timer_reset(timer, timer->target_duration);
+	    }
 	    return 1;
 	}
 
@@ -38,6 +43,11 @@ int input_handling(int ch, Timer *timer)
 	/* switch mode handling. TAB key*/
 	if(ch == '\t'){
 	    timer->mode = (timer->mode + 1) % 3;
+
+	    if(timer->mode == MODE_POMODORO){
+		timer->target_duration = pomodoro_get_current_duration(&timer->pomo);
+	    }
+	    
 	    timer_reset(timer, timer->target_duration);
 	    return 1;
 	}else if(ch == '1'){
@@ -50,6 +60,7 @@ int input_handling(int ch, Timer *timer)
 	    return 1;
 	}else if(ch == '3'){
 	    timer->mode = MODE_POMODORO;
+	    timer->target_duration = pomodoro_get_current_duration(&timer->pomo);
 	    timer_reset(timer, timer->target_duration);
 	    return 1;
 	}
@@ -188,6 +199,9 @@ void ui_render(double elapsed, const Timer *timer)
     } else {
         int total_seconds = 0;
 
+	/* variable for pomodoro get status text fucntion */
+	char pomo_status[64];
+
         if (timer->mode == MODE_STOPWATCH) {
             total_seconds = (int)elapsed;
             if (timer->paused) {
@@ -195,19 +209,20 @@ void ui_render(double elapsed, const Timer *timer)
             } else {
 		ui_print_centered(start_y - 2, "[ RUNNING ]");
             }
-        } else if (timer->mode == MODE_COUNTDOWN || timer->mode == MODE_POMODORO) {
+        } else if (timer->mode == MODE_COUNTDOWN) {
             if (timer_is_finished(timer)) {
                 total_seconds = 0;
 		ui_print_centered(start_y - 2, ">> TIME'S UP! <<");
             } else {
                 total_seconds = (int)timer_remaining(timer);
-                if (timer->paused) {
-		    ui_print_centered(start_y - 2, "[ PAUSED ]");
-                } else {
-		    ui_print_centered(start_y - 2, "[ RUNNING ]");
-                }
+		ui_print_centered(start_y - 2, timer-> paused ? "[ PAUSED ]" : "[ RUNNING ]");
             }
-        }
+        }else if(timer->mode == MODE_POMODORO){
+	    total_seconds = (int)timer_remaining(timer);
+	    pomodoro_get_status_text(&timer->pomo, pomo_status,
+				     sizeof(pomo_status));
+	    ui_print_centered(start_y - 2, pomo_status);
+	}
 
         int hours   = total_seconds / 3600;
         int minutes = (total_seconds % 3600) / 60;
