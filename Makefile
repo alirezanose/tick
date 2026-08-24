@@ -3,6 +3,8 @@ CC 	:= gcc
 CFLAGS	:= -D_POSIX_C_SOURCE=200809L \
 		-Wall \
 		-Wextra \
+		-Werror \
+		-pedantic \
 		-std=c11 \
 		-Isrc
 

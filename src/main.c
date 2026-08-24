@@ -43,12 +43,14 @@ int main(void)
 
 	if(timer.mode == MODE_COUNTDOWN && !timer.paused && timer_remaining(&timer) <= 0.0){
 	    audio_play_alarm();
+	    flash();
 	    timer.paused = true;
 	    last_sec = -1;
 	}
 
 	if(!timer.paused && timer.mode == MODE_POMODORO && timer_remaining(&timer) <= 0.0){
 	    audio_play_alarm();
+	    flash();
 	    timer.paused = true;
 	    pomodoro_next_phase(&timer.pomo);
 	    timer_reset(&timer, pomodoro_get_current_duration(&timer.pomo));
