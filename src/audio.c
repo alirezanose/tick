@@ -3,31 +3,58 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
+/* /\* logging just temp *\/ */
+
+/* this is logging for development*/
+
+/* #include <stdio.h> */
+/* #include <time.h> */
+/* #include <stdarg.h> */
+
+/* static void log_audio(const char *format, ...){ */
+/*     FILE *fp = fopen("tick.log", "a"); */
+/*     if(!fp) return; */
+
+/*     time_t now = time(NULL); */
+/*     struct tm *t = localtime(&now); */
+/*     char time_str[32]; */
+/* 	strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", t); */
+/*     fprintf(fp, "[%s]", time_str); */
+
+/*     va_list args; */
+/*     va_start(args, format); */
+/*     vfprintf(fp, format, args); */
+/*     va_end(args); */
+
+/*     fprintf(fp, "\n"); */
+/*     fclose(fp); */
+/* } */
+
 static bool sound_muted = false;
 
-static const char *tick_sounds[7] =
+static const char *tick_sounds[3] =
 {
     "sounds/tick1.wav",
     "sounds/tick2.wav",
-    "sounds/tick3.wav",
-    "sounds/tick4.wav",
-    "sounds/tick5.wav",
-    "sounds/tick6.wav",
-    "sounds/tick7.wav"
+    "sounds/tick3.wav"
 };
 
 static const char *alarm_sound = "sounds/alarm.wav";
 
 static void play_wav_file(const char *filepath){
     if(sound_muted){
+	/* log_audio("[audio] muted, skip: %s", filepath); */
 	return;
     }
 
     /* check file exist */
     if(access(filepath, F_OK) != 0){
+	/* log_audio("[audio error] file not found: %s", filepath); */
 	return;
     }
 
+    /* log_audio("[audio] executing aplay for: %s", filepath); */
+    
     pid_t pid = fork();
     if(pid == 0){
 	/* child proces */
@@ -51,8 +78,9 @@ void audio_init(void){
 }
 
 void audio_play_tick(void){
-    int random_idx = rand() % 7;
+    int random_idx = rand() % 3;
     play_wav_file(tick_sounds[random_idx]);
+    /* log_audio("[audio] tick triggered, index : %d, file: %s", random_idx, tick_sounds[random_idx]); */
 }
 
 void audio_play_alarm(void){

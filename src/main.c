@@ -41,16 +41,19 @@ int main(void)
 
 	int current_sec = (int)elapsed;
 
+	if(timer.mode == MODE_COUNTDOWN && !timer.paused && timer_remaining(&timer) <= 0.0){
+	    audio_play_alarm();
+	    timer.paused = true;
+	    last_sec = -1;
+	}
+
+
 	if(!timer.paused && current_sec != last_sec){
 	    audio_play_tick();
 	    /* update last second */
 	    last_sec = current_sec;
 	}
 
-	if(timer.mode == MODE_COUNTDOWN && !timer.paused && timer_remaining(&timer) <= 0.0){
-	    audio_play_alarm();
-	    timer.paused = true;
-	}
 
         ui_render(elapsed, &timer);
 
