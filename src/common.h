@@ -9,5 +9,7 @@
 #include <errno.h>
 #include <string.h>
 #include <locale.h>
+#include <stddef.h>
+#include <stdio.h>
 
 #endif

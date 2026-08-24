@@ -49,6 +49,9 @@ void timer_toggle(Timer *timer, const int ch)
 
 int timer_init(Timer *timer)
 {
+    /* init for pomodoro */
+    pomodoro_init(&timer->pomo);
+    
     if (clock_gettime(CLOCK_MONOTONIC, &timer->segment_start) == -1) {
         perror("cannot get time");
         endwin();
