@@ -1,3 +1,6 @@
+PREFIX	?= /usr/local
+BINDIR	?= $(PREFIX)/bin
+DATADIR	?= $(PREFIX)/share/tick
 CC 	:= gcc
 
 CFLAGS	:= -D_POSIX_C_SOURCE=200809L \
@@ -24,9 +27,21 @@ TARGET	:= build/tick
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJ)
+	@mkdir -p build
 	$(CC) $(OBJ) -lncursesw -o $(TARGET)
 
-.PHONY: clean run
+install: $(TARGET)
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 $(TARGET) $(DESTDIR)$(BINDIR)/tick
+	install -d $(DESTDIR)$(DATADIR)/sounds
+	install -m 644 sounds/*.wav $(DESTDIR)$(DATADIR)/sounds/
+
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/tick
+	rm -rf $(DESTDIR)$(DATADIR)
+
+.PHONY: clean run install uninstall
 
 run: $(TARGET)
 	./$(TARGET)
