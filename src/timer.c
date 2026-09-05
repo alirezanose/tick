@@ -1,5 +1,21 @@
 #include "timer.h"
 
+int timer_init(Timer *timer)
+{
+    /* init for pomodoro */
+    timer->accumulated = 0.0;
+    timer->paused = true;
+    timer->target_duration = 0.0;
+    
+    if (clock_gettime(CLOCK_MONOTONIC, &timer->segment_start) == -1) {
+        perror("cannot get time");
+        endwin();
+        return -1;
+    }
+    timer->current = timer->segment_start;
+    return 0;
+}
+
 void timer_reset(Timer *timer, double new_duration)
 {
     timer->target_duration = new_duration;
@@ -31,34 +47,17 @@ void timer_elapsed(const Timer *timer, double *elapsed)
     }
 }
 
-void timer_toggle(Timer *timer, const int ch)
+void timer_toggle(Timer *timer)
 {
-    if (timer->state != NORMAL) {
-        return;
+    if (!timer->paused){
+	timer->accumulated += differences(&timer->segment_start, &timer->current);
+    }else {
+	timer->segment_start = timer->current;
     }
-
-    if (ch == ' ') {
-        if (!timer->paused) {
-            timer->accumulated += differences(&timer->segment_start, &timer->current);
-        } else {
-            timer->segment_start = timer->current;
-        }
-        timer->paused = !timer->paused;
-    }
-}
-
-int timer_init(Timer *timer)
-{
-    /* init for pomodoro */
-    pomodoro_init(&timer->pomo);
     
-    if (clock_gettime(CLOCK_MONOTONIC, &timer->segment_start) == -1) {
-        perror("cannot get time");
-        endwin();
-        return -1;
-    }
-    return 0;
+    timer->paused = !timer->paused;
 }
+
 
 double differences(const struct timespec *segment_start, const struct timespec *current)
 {
@@ -98,14 +97,4 @@ void timer_seconds_to_digits(int total_seconds, int digits[6])
     digits[3] = minutes % 10;
     digits[4] = seconds / 10;
     digits[5] = seconds % 10;
-}
-
-void timer_adjust_edit_duration(Timer *timer, int delta_seconds)
-{
-    int total_sec = timer_digits_to_seconds(timer->edit_digits);
-    total_sec += delta_seconds;
-    if (total_sec < 0) {
-        total_sec = 0;
-    }
-    timer_seconds_to_digits(total_sec, timer->edit_digits);
 }
