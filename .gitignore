@@ -57,5 +57,10 @@ dkms.conf
 *~
 \#*\#
 .\#*
+*.swp
+
+.cache/
+compile_commands.json
 
 build/
+tests/*.o

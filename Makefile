@@ -2,6 +2,8 @@ PREFIX	?= /usr/local
 BINDIR	?= $(PREFIX)/bin
 DATADIR	?= $(PREFIX)/share/tick
 CC 	:= gcc
+TEST_SRCS = tests/test_timer.c src/timer.c src/pomodoro.c
+TEST_BIN = build/test_runner
 
 CFLAGS	:= -D_POSIX_C_SOURCE=200809L \
 		-Wall \
@@ -40,6 +42,11 @@ install: $(TARGET)
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/tick
 	rm -rf $(DESTDIR)$(DATADIR)
+
+test: $(TEST_SRCS)
+	@mkdir -p build
+	$(CC) $(CFLAGS) $(TEST_SRCS) -o $(TEST_BIN) $(LDFLAGS) -lncurses
+	./$(TEST_BIN)
 
 .PHONY: clean run install uninstall
 
