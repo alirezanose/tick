@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include "../src/timer.h"
+#include "../src/pomodoro.h"
 
 static int tests_run = 0;
 
@@ -38,12 +39,48 @@ bool test_timer_seconds_to_digits(){
     return true;
 }
 
+bool test_pomodoro_cycle_transitions(void){
+    Pomodoro pomo;
+    pomodoro_init(&pomo);
+
+    TEST_ASSERT(pomo.phase == POMO_PHASE_FOCUS && pomo.cycle == 1,
+		"Pomodoro initial state is Focus cycle 1");
+    TEST_ASSERT(pomodoro_get_current_duration(&pomo) == 1500.0,
+		"Initial Focus duration is 25m (1500s)");
+
+    pomodoro_next_phase(&pomo);
+    TEST_ASSERT(pomo.phase == POMO_PHASE_SHORT_BREAK && pomo.cycle == 1,
+		"Cycle 1 moves to Short Break");
+    pomodoro_next_phase(&pomo);
+    TEST_ASSERT(pomo.phase == POMO_PHASE_FOCUS && pomo.cycle == 2,
+		"Moves to Cycle 2 Focus");
+
+    pomodoro_next_phase(&pomo);
+    pomodoro_next_phase(&pomo);
+    pomodoro_next_phase(&pomo);
+    pomodoro_next_phase(&pomo);
+    TEST_ASSERT(pomo.phase == POMO_PHASE_FOCUS && pomo.cycle == 4,
+		"Reached Cycle 4 Focus");
+
+    pomodoro_next_phase(&pomo);
+    TEST_ASSERT(pomo.phase == POMO_PHASE_LONG_BREAK, "Cycle 4 moves to long Break (15m)");
+    TEST_ASSERT(pomodoro_get_current_duration(&pomo) == 900.0,
+		"Long break duration is 15m (900s)");
+
+    pomodoro_next_phase(&pomo);
+    TEST_ASSERT(pomo.phase == POMO_PHASE_FOCUS && pomo.cycle == 1,
+		"Long Break returns to cycle 1 focus");
+
+    return true;
+}
+
 int main(void){
     printf("--- Running unit test ---\n");
     bool all_passed = true;
 
     all_passed &= test_timer_digits_to_seconds();
     all_passed &= test_timer_seconds_to_digits();
+    all_passed &= test_pomodoro_cycle_transitions();
 
     if (all_passed) {
 	printf("\n all %d assertion successfully!\n", tests_run);
