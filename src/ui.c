@@ -37,6 +37,11 @@ void input_handling(int ch, App *app)
             return;
         }
 
+	if (ch == 'm' || ch == 'M' || ch == '?' || ch == 27) {
+	    app->state = STATE_MENU;
+	    return;
+	}
+
 	if (ch == ' ') {
 	    timer_toggle(&app->timer);
 	    return;
@@ -138,6 +143,15 @@ void input_handling(int ch, App *app)
         } else if (ch == 27 || ch == 'q') { /* ESC or q cancels edit */
 	    app->state = STATE_NORMAL;
         }
+    } else if (app->state == STATE_MENU) {
+        if (ch == 's' || ch == 'S') {
+            audio_toggle_mute();
+            return;
+        }
+        if (ch == 27 || ch == 'm' || ch == 'M' || ch == '\n' || ch == KEY_ENTER || ch == ' ' || ch == 'q') {
+            app->state = STATE_NORMAL;
+        }
+        return;
     }
 }
 
@@ -165,11 +179,55 @@ void ui_render_tabs(int y, AppMode current_mode){
     ui_print_centered(y, tab_bar);
 }
 
+static void ui_render_menu_modal(void) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
 
+    const int box_width = 54;
+    const int box_height = 14;
+
+    int start_y = (height - box_height) / 2;
+    int start_x = (width - box_width) / 2;
+    if(start_x < 0) start_x = 0;
+    if(start_y < 0) start_y = 0;
+
+    /* Clear inside box area */
+    for (int y = 0; y < box_height; y++) {
+        mvhline(start_y + y, start_x, ' ', box_width);
+    }
+
+    /* Draw box borders */
+    mvaddch(start_y, start_x, ACS_ULCORNER);
+    mvaddch(start_y, start_x + box_width - 1, ACS_URCORNER);
+    mvaddch(start_y + box_height - 1, start_x, ACS_LLCORNER);
+    mvaddch(start_y + box_height - 1, start_x + box_width - 1, ACS_LRCORNER);
+
+    mvhline(start_y, start_x + 1, ACS_HLINE, box_width - 2);
+    mvhline(start_y + box_height - 1, start_x + 1, ACS_HLINE, box_width - 2);
+    mvvline(start_y + 1, start_x, ACS_VLINE, box_height - 2);
+    mvvline(start_y + 1, start_x + box_width - 1, ACS_VLINE, box_height - 2);
+
+    /* Header Title */
+    const char *title = "[ MENU / HELP ]";
+    mvprintw(start_y, start_x + (box_width - (int)strlen(title)) / 2, "%s", title);
+
+    /* Shortcut list */
+    mvprintw(start_y + 2,  start_x + 4, "[SPACE]    Start / Pause");
+    mvprintw(start_y + 3,  start_x + 4, "[TAB]      Switch Mode (Timer/Stopwatch/Pomo)");
+    mvprintw(start_y + 4,  start_x + 4, "[1, 2, 3]  Direct Jump to Mode");
+    mvprintw(start_y + 5,  start_x + 4, "[i]        Edit Countdown Duration");
+    mvprintw(start_y + 6,  start_x + 4, "[UP / DN]  Adjust +/- 5 Seconds");
+    mvprintw(start_y + 7,  start_x + 4, "[r]        Reset Current Timer / Cycle");
+    mvprintw(start_y + 8,  start_x + 4, "[s]        Toggle Sound (Status: %s)", audio_is_muted() ? "OFF" : "ON");
+    mvprintw(start_y + 9,  start_x + 4, "[q]        Quit Application");
+
+    /* Footer instruction */
+    const char *footer_hint = "[ Press ESC or ENTER to Close ]";
+    mvprintw(start_y + 11, start_x + (box_width - (int)strlen(footer_hint)) / 2, "%s", footer_hint);
+}
 
 void ui_render(double elapsed, const App *app)
 {
-    /* clear(); */
     erase();
     
     int height, width;
@@ -205,7 +263,6 @@ void ui_render(double elapsed, const App *app)
         /* Render cursor underline directly beneath active digit */
         mvprintw(start_y + 5, start_x + ascii_get_digit_x_offset(app->editor.cursor_pos), "^^^^^");
 
-	
 	if(app->editor.show_invalid_input == true){
 	    ui_print_centered(start_y + 7, "invalid: duration must be > 0");
 	}else{
@@ -213,8 +270,6 @@ void ui_render(double elapsed, const App *app)
 	}
     } else {
         int total_seconds = 0;
-
-	/* variable for pomodoro get status text fucntion */
 	char pomo_status[64];
 
         if (app->mode == MODE_STOPWATCH) {
@@ -232,10 +287,9 @@ void ui_render(double elapsed, const App *app)
                 total_seconds = (int)timer_remaining(&app->timer);
 		ui_print_centered(start_y - 2, app->timer.paused ? "[ PAUSED ]" : "[ RUNNING ]");
             }
-        }else if(app->mode == MODE_POMODORO){
+        } else if (app->mode == MODE_POMODORO) {
 	    total_seconds = (int)timer_remaining(&app->timer);
-	    pomodoro_get_status_text(&app->pomo, pomo_status,
-				     sizeof(pomo_status));
+	    pomodoro_get_status_text(&app->pomo, pomo_status, sizeof(pomo_status));
 	    ui_print_centered(start_y - 2, pomo_status);
 	}
 
@@ -244,16 +298,14 @@ void ui_render(double elapsed, const App *app)
         int seconds = total_seconds % 60;
 
         ascii_time(hours, minutes, seconds, start_y, start_x);
-	/* footer */
-	char footer[160];
-	snprintf(footer, sizeof(footer),
-		 "[SPACE] Start/Pause [s] Sound: %s [TAB] Mode [r] Reset  [i] Edit   [q] Quit", audio_is_muted() ? "OFF" : "ON");
-	ui_print_centered(start_y + 7, footer);
+    }
+
+    if (app->state == STATE_MENU) {
+        ui_render_menu_modal();
     }
 
     refresh();
 }
-
 
 void ui_shutdown(void)
 {

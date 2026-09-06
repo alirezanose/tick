@@ -15,7 +15,8 @@ typedef enum {
     
 typedef enum {
     STATE_NORMAL,
-    STATE_EDITING
+    STATE_EDITING,
+    STATE_MENU
 } AppState;
 
 typedef struct {
