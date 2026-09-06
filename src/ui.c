@@ -179,6 +179,44 @@ void ui_render_tabs(int y, AppMode current_mode){
     ui_print_centered(y, tab_bar);
 }
 
+static void ui_render_too_small_guard(int width, int height) {
+    const int box_width = 36;
+    const int box_height = 7;
+
+    if (width < box_width || height < box_height) {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "Resize (%dx%d -> %dx%d)",
+                 width, height, MAX_TERM_WIDTH, MAX_TERM_HEIGHT);
+        ui_print_centered(height / 2, msg);
+        return;
+    }
+
+    int start_y = (height - box_height) / 2;
+    int start_x = (width - box_width) / 2;
+    if (start_x < 0) start_x = 0;
+    if (start_y < 0) start_y = 0;
+
+    /* Draw box borders */
+    mvaddch(start_y, start_x, ACS_ULCORNER);
+    mvaddch(start_y, start_x + box_width - 1, ACS_URCORNER);
+    mvaddch(start_y + box_height - 1, start_x, ACS_LLCORNER);
+    mvaddch(start_y + box_height - 1, start_x + box_width - 1, ACS_LRCORNER);
+
+    mvhline(start_y, start_x + 1, ACS_HLINE, box_width - 2);
+    mvhline(start_y + box_height - 1, start_x + 1, ACS_HLINE, box_width - 2);
+    mvvline(start_y + 1, start_x, ACS_VLINE, box_height - 2);
+    mvvline(start_y + 1, start_x + box_width - 1, ACS_VLINE, box_height - 2);
+
+    /* Box title */
+    const char *title = " Terminal Too Small ";
+    mvprintw(start_y, start_x + (box_width - (int)strlen(title)) / 2, "%s", title);
+
+    /* Content */
+    mvprintw(start_y + 2, start_x + 3, "Please expand your terminal");
+    mvprintw(start_y + 3, start_x + 3, "Current : %2d x %2d", width, height);
+    mvprintw(start_y + 4, start_x + 3, "Minimum : %2d x %2d", MAX_TERM_WIDTH, MAX_TERM_HEIGHT);
+}
+
 static void ui_render_menu_modal(void) {
     int height, width;
     getmaxyx(stdscr, height, width);
@@ -235,9 +273,7 @@ void ui_render(double elapsed, const App *app)
 
     /* check size of terminal */
     if(width < MAX_TERM_WIDTH || height < MAX_TERM_HEIGHT){
-	ui_print_centered(height / 2 - 1, "terminal to small");
-	ui_print_centered(height / 2 + 1, "please resize");
-	ui_print_centered(height / 2 + 3, "(min: 45x14)");
+	ui_render_too_small_guard(width, height);
 	refresh();
 	return;
     }
