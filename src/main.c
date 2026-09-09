@@ -2,16 +2,25 @@
 #include "timer.h"
 #include "ui.h"
 #include "audio.h"
+#include "cli.h"
 
-static void app_init(App *app){
+static void app_init(App *app, const CliConfig *config){
     timer_init(&app->timer);
     pomodoro_init(&app->pomo);
 
-    app->countdown_duration    = 900.0;
-    app->timer.target_duration = app->countdown_duration;
-    app->mode = MODE_COUNTDOWN;
+    app->mode = config->mode;
+    app->countdown_duration = config->countdown_duration;
     app->state = STATE_NORMAL;
     app->running = true;
+
+    double initial_duration = 0.0;
+    if (app->mode == MODE_POMODORO) {
+	initial_duration = pomodoro_get_current_duration(&app->pomo);
+    } else if (app->mode == MODE_COUNTDOWN) {
+	initial_duration = app->countdown_duration;
+    }
+    app->timer.target_duration = initial_duration;
+    timer_reset(&app->timer, initial_duration);
 
     app->editor.cursor_pos = 0;
     app->editor.show_invalid_input = false;
@@ -20,11 +29,20 @@ static void app_init(App *app){
     }
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    App app;
-    app_init(&app);
+    CliConfig cli;
+    if (cli_parse_args(argc, argv, &cli) != 0) {
+	return 1;
+    }
 
+    if (cli.action == CLI_ACTION_EXIT_SUCCESS) {
+	return 0;
+    }
+
+    App app;
+    app_init(&app, &cli);
+    
     /* init for sound */
     audio_init();
 

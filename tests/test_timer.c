@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "../src/timer.h"
 #include "../src/pomodoro.h"
+#include "../src/cli.h"
 
 static int tests_run = 0;
 
@@ -74,6 +75,31 @@ bool test_pomodoro_cycle_transitions(void){
     return true;
 }
 
+bool test_cli_parse_duration(void){
+    double sec = 0.0;
+
+    TEST_ASSERT(cli_parse_duration("25m", &sec) == 0 && sec == 1500.0,
+		"25m should parse to 1500s");
+    TEST_ASSERT(cli_parse_duration("1h30m", &sec) == 0 && sec == 5400.0,
+		"1h30m should parse to 5400s");
+    TEST_ASSERT(cli_parse_duration("1h20m15s", &sec) == 0 && sec == 4815.0,
+		"1h20m15s should parse to 4815s");
+    TEST_ASSERT(cli_parse_duration("90s", &sec) == 0 && sec == 90.0,
+		"90s should parse to 90s");
+    TEST_ASSERT(cli_parse_duration("45", &sec) == 0 && sec == 45.0,
+		"45 should parse to 45s");
+
+    /* Invalid cases */
+    TEST_ASSERT(cli_parse_duration("invalid", &sec) != 0,
+		"Non-numeric string should fail");
+    TEST_ASSERT(cli_parse_duration("0s", &sec) != 0,
+		"0s should fail");
+    TEST_ASSERT(cli_parse_duration("-5m", &sec) != 0,
+		"-5m should fail");
+
+    return true;
+}
+
 int main(void){
     printf("--- Running unit test ---\n");
     bool all_passed = true;
@@ -81,6 +107,7 @@ int main(void){
     all_passed &= test_timer_digits_to_seconds();
     all_passed &= test_timer_seconds_to_digits();
     all_passed &= test_pomodoro_cycle_transitions();
+    all_passed &= test_cli_parse_duration();
 
     if (all_passed) {
 	printf("\n all %d assertion successfully!\n", tests_run);
