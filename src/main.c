@@ -12,6 +12,7 @@ static void app_init(App *app, const CliConfig *config){
     app->countdown_duration = config->countdown_duration;
     app->state = STATE_NORMAL;
     app->running = true;
+    app->widget_mode = false;
 
     double initial_duration = 0.0;
     if (app->mode == MODE_POMODORO) {

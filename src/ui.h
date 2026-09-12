@@ -33,6 +33,7 @@ typedef struct {
     AppState state;
     double countdown_duration;
     bool running;
+    bool widget_mode;
 } App;
 
 int ui_init(void);

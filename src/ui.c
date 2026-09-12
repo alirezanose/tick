@@ -37,6 +37,11 @@ void input_handling(int ch, App *app)
             return;
         }
 
+	if (ch == 'w' || ch == 'W') {
+	    app->widget_mode = !app->widget_mode;
+	    return;
+	}
+
 	if (ch == 'm' || ch == 'M' || ch == '?' || ch == 27) {
 	    app->state = STATE_MENU;
 	    return;
@@ -86,6 +91,9 @@ void input_handling(int ch, App *app)
 	    /* end switch mode handling TAB key*/
 	    
         if (ch == 'i') {
+	    if (app->widget_mode || app->mode != MODE_COUNTDOWN) {
+		return;
+	    }
             timer_seconds_to_digits((int)app->countdown_duration, app->editor.digits);
             app->editor.cursor_pos = 0;
             app->editor.show_invalid_input = false;
@@ -179,6 +187,45 @@ void ui_render_tabs(int y, AppMode current_mode){
     ui_print_centered(y, tab_bar);
 }
 
+static void ui_render_widget(double elapsed, const App *app) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    (void)width;
+
+    int total_seconds = 0;
+    char mode_str[64] = "";
+    char status_str[32] = "";
+
+    if (app->mode == MODE_STOPWATCH) {
+        total_seconds = (int)elapsed;
+        snprintf(mode_str, sizeof(mode_str), "[ STOPWATCH ]");
+        snprintf(status_str, sizeof(status_str), app->timer.paused ? "[ PAUSED ]" : "[ RUNNING ]");
+    } else if (app->mode == MODE_COUNTDOWN) {
+        snprintf(mode_str, sizeof(mode_str), "[ COUNTDOWN ]");
+        if (timer_is_finished(&app->timer)) {
+            total_seconds = 0;
+            snprintf(status_str, sizeof(status_str), "[ >> TIME'S UP! << ]");
+        } else {
+            total_seconds = (int)timer_remaining(&app->timer);
+            snprintf(status_str, sizeof(status_str), app->timer.paused ? "[ PAUSED ]" : "[ RUNNING ]");
+        }
+    } else if (app->mode == MODE_POMODORO) {
+        total_seconds = (int)timer_remaining(&app->timer);
+        pomodoro_get_status_text(&app->pomo, mode_str, sizeof(mode_str));
+        snprintf(status_str, sizeof(status_str), app->timer.paused ? "[ PAUSED ]" : "[ RUNNING ]");
+    }
+
+    int hours   = total_seconds / 3600;
+    int minutes = (total_seconds % 3600) / 60;
+    int seconds = total_seconds % 60;
+
+    char line[160];
+    snprintf(line, sizeof(line), "[ %02d:%02d:%02d ]   %s   %s",
+             hours, minutes, seconds, mode_str, status_str);
+
+    ui_print_centered(height / 2, line);
+}
+
 static void ui_render_too_small_guard(int width, int height) {
     const int box_width = 36;
     const int box_height = 7;
@@ -222,7 +269,7 @@ static void ui_render_menu_modal(void) {
     getmaxyx(stdscr, height, width);
 
     const int box_width = 54;
-    const int box_height = 14;
+    const int box_height = 15;
 
     int start_y = (height - box_height) / 2;
     int start_x = (width - box_width) / 2;
@@ -254,14 +301,15 @@ static void ui_render_menu_modal(void) {
     mvprintw(start_y + 3,  start_x + 4, "[TAB]      Switch Mode (Timer/Stopwatch/Pomo)");
     mvprintw(start_y + 4,  start_x + 4, "[1, 2, 3]  Direct Jump to Mode");
     mvprintw(start_y + 5,  start_x + 4, "[i]        Edit Countdown Duration");
-    mvprintw(start_y + 6,  start_x + 4, "[UP / DN]  Adjust +/- 5 Seconds");
-    mvprintw(start_y + 7,  start_x + 4, "[r]        Reset Current Timer / Cycle");
-    mvprintw(start_y + 8,  start_x + 4, "[s]        Toggle Sound (Status: %s)", audio_is_muted() ? "OFF" : "ON");
-    mvprintw(start_y + 9,  start_x + 4, "[q]        Quit Application");
+    mvprintw(start_y + 6,  start_x + 4, "[w]        Toggle Mini Widget Mode");
+    mvprintw(start_y + 7,  start_x + 4, "[UP / DN]  Adjust +/- 5 Seconds");
+    mvprintw(start_y + 8,  start_x + 4, "[r]        Reset Current Timer / Cycle");
+    mvprintw(start_y + 9,  start_x + 4, "[s]        Toggle Sound (Status: %s)", audio_is_muted() ? "OFF" : "ON");
+    mvprintw(start_y + 10, start_x + 4, "[q]        Quit Application");
 
     /* Footer instruction */
     const char *footer_hint = "[ Press ESC or ENTER to Close ]";
-    mvprintw(start_y + 11, start_x + (box_width - (int)strlen(footer_hint)) / 2, "%s", footer_hint);
+    mvprintw(start_y + 12, start_x + (box_width - (int)strlen(footer_hint)) / 2, "%s", footer_hint);
 }
 
 void ui_render(double elapsed, const App *app)
@@ -271,11 +319,21 @@ void ui_render(double elapsed, const App *app)
     int height, width;
     getmaxyx(stdscr, height, width);
 
-    /* check size of terminal */
-    if(width < MAX_TERM_WIDTH || height < MAX_TERM_HEIGHT){
-	ui_render_too_small_guard(width, height);
-	refresh();
-	return;
+    /* Guard jika terminal benar-benar terlalu sempit untuk apapun */
+    if (width < 34 || height < 3) {
+        ui_render_too_small_guard(width, height);
+        refresh();
+        return;
+    }
+
+    /* Mini Widget Mode (Manual Toggle atau Auto-Fallback jika tinggi < 14) */
+    if (app->widget_mode || height < MAX_TERM_HEIGHT || width < MAX_TERM_WIDTH) {
+        ui_render_widget(elapsed, app);
+        if (app->state == STATE_MENU) {
+            ui_render_menu_modal();
+        }
+        refresh();
+        return;
     }
     
     int center_y = height / 2;
