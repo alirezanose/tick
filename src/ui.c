@@ -358,9 +358,9 @@ void ui_render(double elapsed, const App *app)
         mvprintw(start_y + 5, start_x + ascii_get_digit_x_offset(app->editor.cursor_pos), "^^^^^");
 
 	if(app->editor.show_invalid_input == true){
-	    ui_print_centered(start_y + 7, "invalid: duration must be > 0");
+	    ui_print_centered(start_y + 7, "Invalid: duration must be > 0");
 	}else{
-	    ui_print_centered(start_y + 7, "[0-9] Type   [<-/->] Move   [^/v] +/-5s   [ENTER] Save   [ESC] Cancel");
+	    ui_print_centered(start_y + 7, "[0-9] Type     [ENTER] Save     [ESC] Cancel");
 	}
     } else {
         int total_seconds = 0;
