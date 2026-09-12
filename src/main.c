@@ -3,16 +3,20 @@
 #include "ui.h"
 #include "audio.h"
 #include "cli.h"
+#include "config.h"
 
-static void app_init(App *app, const CliConfig *config){
+static void app_init(App *app, const CliConfig *cli, const TickConfig *cfg){
     timer_init(&app->timer);
     pomodoro_init(&app->pomo);
 
-    app->mode = config->mode;
-    app->countdown_duration = config->countdown_duration;
+    app->mode = cli->mode;
+    app->countdown_duration = cli->countdown_duration;
     app->state = STATE_NORMAL;
     app->running = true;
     app->widget_mode = false;
+    app->pomo.focus_duration = cfg->pomo_focus_duration;
+    app->pomo.short_break_duration = cfg->pomo_short_break_duration;
+    app->pomo.long_break_duration = cfg->pomo_long_break_duration;
 
     double initial_duration = 0.0;
     if (app->mode == MODE_POMODORO) {
@@ -32,6 +36,9 @@ static void app_init(App *app, const CliConfig *config){
 
 int main(int argc, char *argv[])
 {
+    TickConfig config;
+    config_load_or_create(&config);
+    
     CliConfig cli;
     if (cli_parse_args(argc, argv, &cli) != 0) {
 	return 1;
@@ -41,8 +48,20 @@ int main(int argc, char *argv[])
 	return 0;
     }
 
+    if (!cli.duration_specified) {
+	cli.countdown_duration = config.default_countdown_duration;
+    }
+
+    if (argc == 1) {
+	cli.mode = config.default_mode;
+    }
+
+    if (!config.sound_enabled) {
+	audio_toggle_mute();
+    }
+
     App app;
-    app_init(&app, &cli);
+    app_init(&app, &cli, &config);
     
     /* init for sound */
     audio_init();

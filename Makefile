@@ -2,7 +2,7 @@ PREFIX	?= /usr/local
 BINDIR	?= $(PREFIX)/bin
 DATADIR	?= $(PREFIX)/share/tick
 CC 	:= gcc
-TEST_SRCS = tests/test_timer.c src/timer.c src/pomodoro.c src/cli.c src/ui.c src/ascii.c src/audio.c
+TEST_SRCS = tests/test_timer.c src/timer.c src/pomodoro.c src/cli.c src/ui.c src/ascii.c src/audio.c src/config.c
 TEST_BIN = build/test_runner
 
 CFLAGS	:= -D_POSIX_C_SOURCE=200809L \
@@ -20,7 +20,8 @@ SRC	:= \
 	src/ui.c \
 	src/ascii.c \
 	src/audio.c \
-	src/cli.c
+	src/cli.c \
+	src/config.c
 
 OBJ	:= $(SRC:.c=.o)
 

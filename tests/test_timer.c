@@ -4,6 +4,7 @@
 #include "../src/timer.h"
 #include "../src/pomodoro.h"
 #include "../src/cli.h"
+#include "../src/config.h"
 
 static int tests_run = 0;
 
@@ -100,6 +101,26 @@ bool test_cli_parse_duration(void){
     return true;
 }
 
+bool test_config_parsing(void){
+    TickConfig cfg;
+    config_init_defaults(&cfg);
+
+    TEST_ASSERT(config_parse_line("default_mode = stopwatch", &cfg) == 0 && cfg.default_mode == MODE_STOPWATCH,
+		"config parses default_mode = stopwatch");
+    TEST_ASSERT(config_parse_line("sound = false", &cfg) == 0 && cfg.sound_enabled == false,
+		"config parses sound = false");
+    TEST_ASSERT(config_parse_line("countdown_duration = 30m", &cfg) == 0 && cfg.default_countdown_duration == 1800.0,
+		"config parses countdown_duration = 30m");
+    TEST_ASSERT(config_parse_line("pomo_focus = 50m", &cfg) == 0 && cfg.pomo_focus_duration == 3000.0,
+		"config parses pomo_focus = 50m");
+    TEST_ASSERT(config_parse_line("# this is a comment", &cfg) == 0,
+		"config ignores comments");
+    TEST_ASSERT(config_parse_line("invalid_key = 123", &cfg) != 0,
+		"config rejects unknown keys");
+
+    return true;
+}
+
 int main(void){
     printf("--- Running unit test ---\n");
     bool all_passed = true;
@@ -108,6 +129,7 @@ int main(void){
     all_passed &= test_timer_seconds_to_digits();
     all_passed &= test_pomodoro_cycle_transitions();
     all_passed &= test_cli_parse_duration();
+    all_passed &= test_config_parsing();
 
     if (all_passed) {
 	printf("\n all %d assertion successfully!\n", tests_run);
