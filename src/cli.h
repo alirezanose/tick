@@ -4,7 +4,7 @@
 #include "common.h"
 #include "ui.h"
 
-#define TICK_VERSION "1.1.0"
+#define TICK_VERSION "1.2.0"
 
 typedef enum {
     CLI_ACTION_RUN,

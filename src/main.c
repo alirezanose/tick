@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
     
     audio_init();
     notification_init();
+    notification_set_enabled(config.notification_enabled);
 
     if (ui_init() == -1) {
         return -1;

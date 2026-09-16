@@ -7,6 +7,7 @@
 typedef struct {
     AppMode default_mode;
     bool sound_enabled;
+    bool notification_enabled;
     double default_countdown_duration;
     double pomo_focus_duration;
     double pomo_short_break_duration;

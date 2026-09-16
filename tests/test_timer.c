@@ -109,6 +109,8 @@ bool test_config_parsing(void){
 		"config parses default_mode = stopwatch");
     TEST_ASSERT(config_parse_line("sound = false", &cfg) == 0 && cfg.sound_enabled == false,
 		"config parses sound = false");
+    TEST_ASSERT(config_parse_line("notification = false", &cfg) == 0 && cfg.notification_enabled == false,
+		"config parses notification = false");
     TEST_ASSERT(config_parse_line("countdown_duration = 30m", &cfg) == 0 && cfg.default_countdown_duration == 1800.0,
 		"config parses countdown_duration = 30m");
     TEST_ASSERT(config_parse_line("pomo_focus = 50m", &cfg) == 0 && cfg.pomo_focus_duration == 3000.0,
